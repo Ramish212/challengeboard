@@ -55,8 +55,8 @@
     function App() {
       const [challenges, setChallenges]   = useState(SAMPLE_CHALLENGES.slice(0, 4));
       const [completed, setCompleted]     = useState({});
-      const [streak]                      = useState(3);
-      const [totalPoints, setTotalPoints] = useState(85);
+      const [streak, setStreak]              = useState(0);
+      const [totalPoints, setTotalPoints] = useState(0);
       const [tab, setTab]                 = useState("today");
       const [newChallenge, setNewChallenge] = useState("");
       const [newCategory, setNewCategory]   = useState("custom");
@@ -77,6 +77,32 @@
         const done = challenges.length > 0 && Object.keys(completed).length === challenges.length;
         setAllDone(done);
       }, [completed, challenges]);
+
+      // Daily streak tracker — increments once per day on login
+      useEffect(() => {
+        const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+        const lastLogin = localStorage.getItem("cb_last_login");
+        const savedStreak = parseInt(localStorage.getItem("cb_streak") || "0", 10);
+
+        if (!lastLogin) {
+          // First ever login
+          localStorage.setItem("cb_last_login", today);
+          localStorage.setItem("cb_streak", "1");
+          setStreak(1);
+        } else if (lastLogin === today) {
+          // Already logged in today, just restore streak
+          setStreak(savedStreak);
+        } else {
+          // Check if yesterday — if so continue streak, else reset
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().slice(0, 10);
+          const newStreak = lastLogin === yesterdayStr ? savedStreak + 1 : 1;
+          localStorage.setItem("cb_last_login", today);
+          localStorage.setItem("cb_streak", String(newStreak));
+          setStreak(newStreak);
+        }
+      }, []);
 
       const toggleChallenge = (id, points) => {
         if (completed[id]) {
